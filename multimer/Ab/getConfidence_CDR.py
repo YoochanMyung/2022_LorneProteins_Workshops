@@ -570,7 +570,7 @@ def getIMGTCDRs_fab(input_pdb):
         result_pd.loc['light','CDR_avr_pLDDT'] = np.mean(np.concatenate((CDR_L1_pLDDT,CDR_L2_pLDDT,CDR_L3_pLDDT),axis=None)).round(2)
 
     print(result_pd[['CDR_avr_pLDDT','CDR-1_avr_pLDDT','CDR-2_avr_pLDDT','CDR-3_avr_pLDDT']])
-    result_pd.to_csv('test_out.csv')
+    result_pd.to_csv('CDR_confidence.csv')
 
 def getpLDDT(db_res_pd,query_list):
     output_dict = dict()
