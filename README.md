@@ -8,3 +8,5 @@
 - `./multimer/`
 - Extract the average pLDDT scores of CDRs and provide Pymol commands for highlighting CDRs.
 
+### Contacts
+- Yoochan Myung (ymyung at student.unimelb.edu.au)
