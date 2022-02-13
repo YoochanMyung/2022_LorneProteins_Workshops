@@ -416,7 +416,7 @@ def readFasta(fasta):
 
     return new_pd
 
-def getIMGTCDRs_fab(input_pdb):
+def getIMGTCDRs(input_pdb):
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always", PDBConstructionWarning)
 
@@ -424,7 +424,7 @@ def getIMGTCDRs_fab(input_pdb):
         result_pd = pd.DataFrame()
 
         type_of_ab,heavy_chain,light_chain,_ = checkAbAg_using_pdbtofasta(input_pdb).split(';')
-
+        print("Type of Antibody: {}".format(type_of_ab))
         for each_chain in getAllChains(input_pdb):
             fastanPDBMap = fastanPDBMap.append([getFASTAnPDBnumberMap(input_pdb,each_chain)],ignore_index=True, sort=False)
         fastanPDBMap.fasta_numb = fastanPDBMap.fasta_numb.astype(int)
@@ -432,48 +432,50 @@ def getIMGTCDRs_fab(input_pdb):
         fastanPDBMap.chain = fastanPDBMap.chain.astype(str)
 
         result_pd.loc['heavy','ID'] = input_pdb
-        result_pd.loc['heavy','type'] = 'Fab'
+        # result_pd.loc['heavy','type'] = 'Fab'
+        result_pd.loc['heavy','type'] = type_of_ab
+        if not type_of_ab.startswith('Fll'):
+            CDR_H_dict = getCDRnumbForHighlight_IMGT(pdbtofasta(input_pdb,heavy_chain),fastanPDBMap.query('chain == "{}"'.format(heavy_chain)),heavy_chain,input_pdb,'H')
+            if CDR_H_dict != 'none':
+                result_pd.loc['heavy','CDR-1'] = ','.join(CDR_H_dict['CDR-1'])
+                result_pd.loc['heavy','nCDR-1'] = len(CDR_H_dict['CDR-1'])
+                result_pd.loc['heavy','CDR-2'] = ','.join(CDR_H_dict['CDR-2'])
+                result_pd.loc['heavy','nCDR-2'] = len(CDR_H_dict['CDR-2'])
+                result_pd.loc['heavy','CDR-3'] = ','.join(CDR_H_dict['CDR-3'])
+                result_pd.loc['heavy','nCDR-3'] = len(CDR_H_dict['CDR-3'])
+                result_pd.loc['heavy','nCDRs'] =  len(CDR_H_dict['CDR-1']) + len(CDR_H_dict['CDR-2']) + len(CDR_H_dict['CDR-3'])
+            else:
+                result_pd.loc['heavy','heavy_chain'] = 'might_not_H_chain'
+                result_pd.loc['heavy','CDR-1'] = 'might_not_H_chain'
+                result_pd.loc['heavy','nCDR-1'] = 0
+                result_pd.loc['heavy','CDR-2'] = 'might_not_H_chain'
+                result_pd.loc['heavy','nCDR-2'] = 0
+                result_pd.loc['heavy','CDR-3'] = 'might_not_H_chain'
+                result_pd.loc['heavy','nCDR-3'] = 0
+                result_pd.loc['heavy','nCDRs'] = 0
 
-        CDR_H_dict = getCDRnumbForHighlight_IMGT(pdbtofasta(input_pdb,heavy_chain),fastanPDBMap.query('chain == "{}"'.format(heavy_chain)),heavy_chain,input_pdb,'H')
-        if CDR_H_dict != 'none':
-            result_pd.loc['heavy','CDR-1'] = ','.join(CDR_H_dict['CDR-1'])
-            result_pd.loc['heavy','nCDR-1'] = len(CDR_H_dict['CDR-1'])
-            result_pd.loc['heavy','CDR-2'] = ','.join(CDR_H_dict['CDR-2'])
-            result_pd.loc['heavy','nCDR-2'] = len(CDR_H_dict['CDR-2'])
-            result_pd.loc['heavy','CDR-3'] = ','.join(CDR_H_dict['CDR-3'])
-            result_pd.loc['heavy','nCDR-3'] = len(CDR_H_dict['CDR-3'])
-            result_pd.loc['heavy','nCDRs'] =  len(CDR_H_dict['CDR-1']) + len(CDR_H_dict['CDR-2']) + len(CDR_H_dict['CDR-3'])
-        else:
-            result_pd.loc['heavy','heavy_chain'] = 'might_not_H_chain'
-            result_pd.loc['heavy','CDR-1'] = 'might_not_H_chain'
-            result_pd.loc['heavy','nCDR-1'] = 0
-            result_pd.loc['heavy','CDR-2'] = 'might_not_H_chain'
-            result_pd.loc['heavy','nCDR-2'] = 0
-            result_pd.loc['heavy','CDR-3'] = 'might_not_H_chain'
-            result_pd.loc['heavy','nCDR-3'] = 0
-            result_pd.loc['heavy','nCDRs'] = 0
+            result_pd.loc['light','ID'] = input_pdb
+            result_pd.loc['light','type'] = 'Fab'
 
-        result_pd.loc['light','ID'] = input_pdb
-        result_pd.loc['light','type'] = 'Fab'
-
-        CDR_L_dict = getCDRnumbForHighlight_IMGT(pdbtofasta(input_pdb,light_chain),fastanPDBMap.query('chain == "{}"'.format(light_chain)),light_chain,input_pdb,'L')
-        if CDR_L_dict != 'none':
-            result_pd.loc['light','CDR-1'] = ','.join(CDR_L_dict['CDR-1'])
-            result_pd.loc['light','nCDR-1'] = len(CDR_L_dict['CDR-1'])
-            result_pd.loc['light','CDR-2'] = ','.join(CDR_L_dict['CDR-2'])
-            result_pd.loc['light','nCDR-2'] = len(CDR_L_dict['CDR-2'])
-            result_pd.loc['light','CDR-3'] = ','.join(CDR_L_dict['CDR-3'])
-            result_pd.loc['light','nCDR-3'] = len(CDR_L_dict['CDR-3'])
-            result_pd.loc['light','nCDRs'] =  len(CDR_L_dict['CDR-1']) + len(CDR_L_dict['CDR-2']) + len(CDR_L_dict['CDR-3'])
-        else:
-            result_pd.loc['light','light_chain'] = 'might_not_L_chain'
-            result_pd.loc['light','CDR-1'] = 'might_not_L_chain'
-            result_pd.loc['light','nCDR-1'] = 0
-            result_pd.loc['light','CDR-2'] = 'might_not_L_chain'
-            result_pd.loc['light','nCDR-2'] = 0
-            result_pd.loc['light','CDR-3'] = 'might_not_L_chain'
-            result_pd.loc['light','nCDR-3'] = 0
-            result_pd.loc['light','nCDRs'] = 0
+        if not type_of_ab.startswith('Nanobody'):
+            CDR_L_dict = getCDRnumbForHighlight_IMGT(pdbtofasta(input_pdb,light_chain),fastanPDBMap.query('chain == "{}"'.format(light_chain)),light_chain,input_pdb,'L')
+            if CDR_L_dict != 'none':
+                result_pd.loc['light','CDR-1'] = ','.join(CDR_L_dict['CDR-1'])
+                result_pd.loc['light','nCDR-1'] = len(CDR_L_dict['CDR-1'])
+                result_pd.loc['light','CDR-2'] = ','.join(CDR_L_dict['CDR-2'])
+                result_pd.loc['light','nCDR-2'] = len(CDR_L_dict['CDR-2'])
+                result_pd.loc['light','CDR-3'] = ','.join(CDR_L_dict['CDR-3'])
+                result_pd.loc['light','nCDR-3'] = len(CDR_L_dict['CDR-3'])
+                result_pd.loc['light','nCDRs'] =  len(CDR_L_dict['CDR-1']) + len(CDR_L_dict['CDR-2']) + len(CDR_L_dict['CDR-3'])
+            else:
+                result_pd.loc['light','light_chain'] = 'might_not_L_chain'
+                result_pd.loc['light','CDR-1'] = 'might_not_L_chain'
+                result_pd.loc['light','nCDR-1'] = 0
+                result_pd.loc['light','CDR-2'] = 'might_not_L_chain'
+                result_pd.loc['light','nCDR-2'] = 0
+                result_pd.loc['light','CDR-3'] = 'might_not_L_chain'
+                result_pd.loc['light','nCDR-3'] = 0
+                result_pd.loc['light','nCDRs'] = 0
 
         db_all_pd = pd.DataFrame()
         db_res_pd = pd.DataFrame()
@@ -495,79 +497,81 @@ def getIMGTCDRs_fab(input_pdb):
                 },ignore_index=True)
 
 
-        CDR_H1_pLDDT = list()
-        CDR_H2_pLDDT = list()
-        CDR_H3_pLDDT = list()
+        if not type_of_ab.startswith('FLL'):
+            CDR_H1_pLDDT = list()
+            CDR_H2_pLDDT = list()
+            CDR_H3_pLDDT = list()
 
-        if result_pd.loc['heavy','nCDR-1'] > 0:
-            query_list = ','.join([each for each in result_pd.loc['heavy','CDR-1'].split(',')])
-            for each in getpLDDT(db_res_pd,query_list).values():
-                CDR_H1_pLDDT.append(each['avr_pLDDT'])
+            if result_pd.loc['heavy','nCDR-1'] > 0:
+                query_list = ','.join([each for each in result_pd.loc['heavy','CDR-1'].split(',')])
+                for each in getpLDDT(db_res_pd,query_list).values():
+                    CDR_H1_pLDDT.append(each['avr_pLDDT'])
 
-        if result_pd.loc['heavy','nCDR-2'] > 0:
-            query_list = ','.join([each for each in result_pd.loc['heavy','CDR-2'].split(',')])
-            for each in getpLDDT(db_res_pd,query_list).values():
-                CDR_H2_pLDDT.append(each['avr_pLDDT'])
+            if result_pd.loc['heavy','nCDR-2'] > 0:
+                query_list = ','.join([each for each in result_pd.loc['heavy','CDR-2'].split(',')])
+                for each in getpLDDT(db_res_pd,query_list).values():
+                    CDR_H2_pLDDT.append(each['avr_pLDDT'])
 
-        if result_pd.loc['heavy','nCDR-3'] > 0:
-            query_list = ','.join([each for each in result_pd.loc['heavy','CDR-3'].split(',')])
-            for each in getpLDDT(db_res_pd,query_list).values():
-                CDR_H3_pLDDT.append(each['avr_pLDDT'])
+            if result_pd.loc['heavy','nCDR-3'] > 0:
+                query_list = ','.join([each for each in result_pd.loc['heavy','CDR-3'].split(',')])
+                for each in getpLDDT(db_res_pd,query_list).values():
+                    CDR_H3_pLDDT.append(each['avr_pLDDT'])
 
-        CDR_H1_pLDDT = np.array(CDR_H1_pLDDT).astype(float)
-        CDR_H2_pLDDT = np.array(CDR_H2_pLDDT).astype(float)
-        CDR_H3_pLDDT = np.array(CDR_H3_pLDDT).astype(float)
+            CDR_H1_pLDDT = np.array(CDR_H1_pLDDT).astype(float)
+            CDR_H2_pLDDT = np.array(CDR_H2_pLDDT).astype(float)
+            CDR_H3_pLDDT = np.array(CDR_H3_pLDDT).astype(float)
 
-        result_pd.loc['heavy','CDR-1_min_pLDDT'] = np.min(CDR_H1_pLDDT).round(2)
-        result_pd.loc['heavy','CDR-1_avr_pLDDT'] = np.mean(CDR_H1_pLDDT).round(2)
-        result_pd.loc['heavy','CDR-1_max_pLDDT'] = np.max(CDR_H1_pLDDT).round(2)
-        result_pd.loc['heavy','CDR-2_min_pLDDT'] = np.min(CDR_H2_pLDDT).round(2)
-        result_pd.loc['heavy','CDR-2_avr_pLDDT'] = np.mean(CDR_H2_pLDDT).round(2)
-        result_pd.loc['heavy','CDR-2_max_pLDDT'] = np.max(CDR_H2_pLDDT).round(2)
-        result_pd.loc['heavy','CDR-3_min_pLDDT'] = np.min(CDR_H3_pLDDT).round(2)
-        result_pd.loc['heavy','CDR-3_avr_pLDDT'] = np.mean(CDR_H3_pLDDT).round(2)
-        result_pd.loc['heavy','CDR-3_max_pLDDT'] = np.max(CDR_H3_pLDDT).round(2)
-        result_pd.loc['heavy','CDR-1_std_pLDDT'] = np.std(CDR_H1_pLDDT).round(2)
-        result_pd.loc['heavy','CDR-2_std_pLDDT'] = np.std(CDR_H2_pLDDT).round(2)
-        result_pd.loc['heavy','CDR-3_std_pLDDT'] = np.std(CDR_H3_pLDDT).round(2)        
-        result_pd.loc['heavy','CDR_avr_pLDDT'] = np.mean(np.concatenate((CDR_H1_pLDDT,CDR_H2_pLDDT,CDR_H3_pLDDT),axis=None)).round(2)
+            result_pd.loc['heavy','CDR-1_min_pLDDT'] = np.min(CDR_H1_pLDDT).round(2)
+            result_pd.loc['heavy','CDR-1_avr_pLDDT'] = np.mean(CDR_H1_pLDDT).round(2)
+            result_pd.loc['heavy','CDR-1_max_pLDDT'] = np.max(CDR_H1_pLDDT).round(2)
+            result_pd.loc['heavy','CDR-2_min_pLDDT'] = np.min(CDR_H2_pLDDT).round(2)
+            result_pd.loc['heavy','CDR-2_avr_pLDDT'] = np.mean(CDR_H2_pLDDT).round(2)
+            result_pd.loc['heavy','CDR-2_max_pLDDT'] = np.max(CDR_H2_pLDDT).round(2)
+            result_pd.loc['heavy','CDR-3_min_pLDDT'] = np.min(CDR_H3_pLDDT).round(2)
+            result_pd.loc['heavy','CDR-3_avr_pLDDT'] = np.mean(CDR_H3_pLDDT).round(2)
+            result_pd.loc['heavy','CDR-3_max_pLDDT'] = np.max(CDR_H3_pLDDT).round(2)
+            result_pd.loc['heavy','CDR-1_std_pLDDT'] = np.std(CDR_H1_pLDDT).round(2)
+            result_pd.loc['heavy','CDR-2_std_pLDDT'] = np.std(CDR_H2_pLDDT).round(2)
+            result_pd.loc['heavy','CDR-3_std_pLDDT'] = np.std(CDR_H3_pLDDT).round(2)        
+            result_pd.loc['heavy','CDR_avr_pLDDT'] = np.mean(np.concatenate((CDR_H1_pLDDT,CDR_H2_pLDDT,CDR_H3_pLDDT),axis=None)).round(2)
 
-        CDR_L1_pLDDT = list()
-        CDR_L2_pLDDT = list()
-        CDR_L3_pLDDT = list()
+        if not type_of_ab.startswith('Nanobody') :
+            CDR_L1_pLDDT = list()
+            CDR_L2_pLDDT = list()
+            CDR_L3_pLDDT = list()
 
-        if result_pd.loc['light','nCDR-1'] > 0:
-            query_list = ','.join([each for each in result_pd.loc['light','CDR-1'].split(',')])
-            for each in getpLDDT(db_res_pd,query_list).values():
-                CDR_L1_pLDDT.append(each['avr_pLDDT'])
+            if result_pd.loc['light','nCDR-1'] > 0:
+                query_list = ','.join([each for each in result_pd.loc['light','CDR-1'].split(',')])
+                for each in getpLDDT(db_res_pd,query_list).values():
+                    CDR_L1_pLDDT.append(each['avr_pLDDT'])
 
-        if result_pd.loc['light','nCDR-2'] > 0:
-            query_list = ','.join([each for each in result_pd.loc['light','CDR-2'].split(',')])
-            for each in getpLDDT(db_res_pd,query_list).values():
-                CDR_L2_pLDDT.append(each['avr_pLDDT'])
+            if result_pd.loc['light','nCDR-2'] > 0:
+                query_list = ','.join([each for each in result_pd.loc['light','CDR-2'].split(',')])
+                for each in getpLDDT(db_res_pd,query_list).values():
+                    CDR_L2_pLDDT.append(each['avr_pLDDT'])
 
-        if result_pd.loc['light','nCDR-3'] > 0:
-            query_list = ','.join([each for each in result_pd.loc['light','CDR-3'].split(',')])
-            for each in getpLDDT(db_res_pd,query_list).values():
-                CDR_L3_pLDDT.append(each['avr_pLDDT'])
+            if result_pd.loc['light','nCDR-3'] > 0:
+                query_list = ','.join([each for each in result_pd.loc['light','CDR-3'].split(',')])
+                for each in getpLDDT(db_res_pd,query_list).values():
+                    CDR_L3_pLDDT.append(each['avr_pLDDT'])
 
-        CDR_L1_pLDDT = np.array(CDR_L1_pLDDT).astype(float)
-        CDR_L2_pLDDT = np.array(CDR_L2_pLDDT).astype(float)
-        CDR_L3_pLDDT = np.array(CDR_L3_pLDDT).astype(float)
+            CDR_L1_pLDDT = np.array(CDR_L1_pLDDT).astype(float)
+            CDR_L2_pLDDT = np.array(CDR_L2_pLDDT).astype(float)
+            CDR_L3_pLDDT = np.array(CDR_L3_pLDDT).astype(float)
 
-        result_pd.loc['light','CDR-1_min_pLDDT'] = np.min(CDR_L1_pLDDT).round(2)
-        result_pd.loc['light','CDR-1_avr_pLDDT'] = np.mean(CDR_L1_pLDDT).round(2)
-        result_pd.loc['light','CDR-1_max_pLDDT'] = np.max(CDR_L1_pLDDT).round(2)
-        result_pd.loc['light','CDR-2_min_pLDDT'] = np.min(CDR_L2_pLDDT).round(2)
-        result_pd.loc['light','CDR-2_avr_pLDDT'] = np.mean(CDR_L2_pLDDT).round(2)
-        result_pd.loc['light','CDR-2_max_pLDDT'] = np.max(CDR_L2_pLDDT).round(2)
-        result_pd.loc['light','CDR-3_min_pLDDT'] = np.min(CDR_L3_pLDDT).round(2)
-        result_pd.loc['light','CDR-3_avr_pLDDT'] = np.mean(CDR_L3_pLDDT).round(2)
-        result_pd.loc['light','CDR-3_max_pLDDT'] = np.max(CDR_L3_pLDDT).round(2)
-        result_pd.loc['light','CDR-1_std_pLDDT'] = np.std(CDR_L1_pLDDT).round(2)
-        result_pd.loc['light','CDR-2_std_pLDDT'] = np.std(CDR_L2_pLDDT).round(2)
-        result_pd.loc['light','CDR-3_std_pLDDT'] = np.std(CDR_L3_pLDDT).round(2)
-        result_pd.loc['light','CDR_avr_pLDDT'] = np.mean(np.concatenate((CDR_L1_pLDDT,CDR_L2_pLDDT,CDR_L3_pLDDT),axis=None)).round(2)
+            result_pd.loc['light','CDR-1_min_pLDDT'] = np.min(CDR_L1_pLDDT).round(2)
+            result_pd.loc['light','CDR-1_avr_pLDDT'] = np.mean(CDR_L1_pLDDT).round(2)
+            result_pd.loc['light','CDR-1_max_pLDDT'] = np.max(CDR_L1_pLDDT).round(2)
+            result_pd.loc['light','CDR-2_min_pLDDT'] = np.min(CDR_L2_pLDDT).round(2)
+            result_pd.loc['light','CDR-2_avr_pLDDT'] = np.mean(CDR_L2_pLDDT).round(2)
+            result_pd.loc['light','CDR-2_max_pLDDT'] = np.max(CDR_L2_pLDDT).round(2)
+            result_pd.loc['light','CDR-3_min_pLDDT'] = np.min(CDR_L3_pLDDT).round(2)
+            result_pd.loc['light','CDR-3_avr_pLDDT'] = np.mean(CDR_L3_pLDDT).round(2)
+            result_pd.loc['light','CDR-3_max_pLDDT'] = np.max(CDR_L3_pLDDT).round(2)
+            result_pd.loc['light','CDR-1_std_pLDDT'] = np.std(CDR_L1_pLDDT).round(2)
+            result_pd.loc['light','CDR-2_std_pLDDT'] = np.std(CDR_L2_pLDDT).round(2)
+            result_pd.loc['light','CDR-3_std_pLDDT'] = np.std(CDR_L3_pLDDT).round(2)
+            result_pd.loc['light','CDR_avr_pLDDT'] = np.mean(np.concatenate((CDR_L1_pLDDT,CDR_L2_pLDDT,CDR_L3_pLDDT),axis=None)).round(2)
 
     print(result_pd[['CDR_avr_pLDDT','CDR-1_avr_pLDDT','CDR-2_avr_pLDDT','CDR-3_avr_pLDDT']])
     result_pd.to_csv('CDR_confidence.csv')
@@ -617,6 +621,6 @@ def print_CDR_pymol(pdb_file):
 
 if __name__ == '__main__':
     input_pdb = sys.argv[1]
-    getIMGTCDRs_fab(input_pdb)
+    getIMGTCDRs(input_pdb)
     print_CDR_pymol(input_pdb)
 
